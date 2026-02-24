@@ -2,7 +2,7 @@ import csv
 
 
 
-def _parse_CSV_to_dict(input_file: str):
+def parse_CSV_to_dict(input_file: str):
   ''' Parst csv-Datei in einen Eventlog, sortiert nach den Fällen.
   
   Parameter
@@ -30,7 +30,7 @@ def _parse_CSV_to_dict(input_file: str):
   return eventlog
 
 
-def _filter_activities(log: dict, filtered_activites: list):
+def filter_activities(log: dict, filtered_activites: list):
   ''' Löscht Aktivitäten bestimmt aus allen Fällen.
 
   Funktion arbeitet nicht mutierend und erstellt ein neues Log, welches bearbeitet wird.
@@ -57,7 +57,7 @@ def _filter_activities(log: dict, filtered_activites: list):
   return new_log
 
 
-def _filter_variants(variants: dict, threshhold: int):
+def filter_variants(variants: dict, threshhold: int):
   ''' Löscht alle Varianten, welche unter der threshhold liegen.
   
   Funktion erstellt eine Kopie, bearbeitet diese udn gibt die bearbeitet Kopie zurück.
@@ -89,7 +89,7 @@ def _filter_variants(variants: dict, threshhold: int):
   return new_variants
 
 
-def _get_variants(log: dict):
+def get_variants(log: dict):
   '''Zählt die Pfade und deren Vorkommen in einem Log.
 
   Parameter
@@ -115,4 +115,23 @@ def _get_variants(log: dict):
   return variants
 
 
+def get_activities(log:dict):
+  '''Holt alle Aktivitäten aus einem Log
   
+  Parameter
+  ---------
+    Ereignislog, aus dem die Aktivitäten gesucht werden
+
+  Returns
+  -------
+    Eine Liste mit allen Aktivitäten, jede Aktivität kommt einmal vor
+  '''
+
+  activites = []
+
+  for case in log.keys():
+    for event in log[case]:
+      if event['activity'] not in activites:
+        activites.append(event['activity'])
+
+  return activites
