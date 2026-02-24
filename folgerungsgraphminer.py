@@ -2,10 +2,6 @@ import create_graph as cg
 from graphviz import Digraph
 
 
-
-
-
-
 class Folgerungsgraph:
   activites = []
   variants = {}
