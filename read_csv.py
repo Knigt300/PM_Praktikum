@@ -105,6 +105,7 @@ def get_variants(log: dict):
   for case in log.keys():
     path = ''   # Pfad zu case
     for event in log[case]:
+      # Leerzeichen wichtig, damit wir Aktivitäten aus dem Pfad erkennen können
       path += ' ' + event['activity']
     # vorkommen von Pfad erhöhen
     if path in variants:

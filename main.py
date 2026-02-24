@@ -1,5 +1,5 @@
 import read_csv as rcsv
-import create_graph as cg
+import folgerungsgraphminer as fgm
 
 
 log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
@@ -8,12 +8,9 @@ variants = rcsv.get_variants(log)
 
 activities = rcsv.get_activities(log)
 
-print (activities)
+folerungsgraph = fgm.Folgerungsgraph(activities, variants)
 
-paths = []
+folerungsgraph.drawFolgerungsgraph()
 
-for v in variants.keys():
-  paths.append(v.split())
 
-cg.renderGraph(activities, paths)
 
