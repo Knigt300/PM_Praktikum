@@ -98,7 +98,6 @@ def get_variants(log: dict):
     Ein Ereignissprotokoll, aus welchem die Pfade kommen.
 
   Returns:
-  dict
     Dict, mit den Pfaden als Schlüssel und die Werte sind die Vorkommen des Pfades.
   '''
   variants = {}
