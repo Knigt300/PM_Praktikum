@@ -5,25 +5,20 @@ import performance as p
 
 log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
 
-#  TODO case in dict umwandeln damit Platz für Metriken ist
 
+folerungsgraph = fgm.Folgerungsgraph(log)
 
-start_time = dt.datetime.strptime(log['KSV0000001'][0]['start_timestamp'], "%Y-%m-%d %H:%M:%S")
-end_time = dt.datetime.strptime(log['KSV0000001'][0]['end_timestamp'], "%Y-%m-%d %H:%M:%S")
-print(start_time)
-print(end_time)
-print(end_time - start_time)
-buff = dt.timedelta(seconds=  end_time.timestamp() - start_time.timestamp())
-print(buff/2)
-
-variants = rcsv.get_variants(log)
-
-activities = rcsv.get_activities(log)
+folerungsgraph.drawFolgerungsgraph()
 
 p.peformance_for_log(log)
-# folerungsgraph = fgm.Folgerungsgraph(activities, variants)
 
-# folerungsgraph.drawFolgerungsgraph()
+long_cases = p.get_longest_cases(log, 3)
+print('Längsten Fälle:')
+for case in long_cases:
+  print(case['activities'][0]['case_id'],case['duration'])
 
+bottlenecks = p.get_bottlenecks(log)
+print('Durchschnittliche Wartezeit:', bottlenecks['threshhold'])
 
-
+for acts in bottlenecks['problems']:
+  print('Wartezeit:', acts[1], 'von', acts[0].split()[0],'zu', acts[0].split()[1])

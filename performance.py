@@ -6,26 +6,44 @@ import datetime as dt
 # TODO Wartezeit naive bestimmen (Aktivitäten sind zeitlich sortiert) oder sicher gehen?
 # activitäten nach zeitlichen reihenfolge sortieren?
 
-def _get_next_activity(case:list, activity:dict):
-  ''' Sucht die chronologisch nächste Aktivität
-  '''
-  end = dt.datetime.strptime(activity['end_timestamp'], '%Y-%m-%d %H:%M:%S')
-  waiting_time = dt.timedelta(weeks= 10000) # es ist zu erwarten, dass die wartezeit zwischen zwei activitäten weniger als 10000 Wochen sind
-  next_act = activity
+# Zeitlich gesehen passiert a.start b.start b.ende a.ende nicht
+# a.start b.start a.ende b.ende kann passieren
 
-  for act in case:
-    act_endtime = dt.datetime.strptime(act['start_timestamp'], '%Y-%m-%d %H:%M:%S')
-    # Aktivität muss NACH unserer kommen
-    if act_endtime > end:
-      # ist die Wartezeit weniger?
-      if waiting_time > end - act_endtime:
-        next_act = act
+def _get_activity_waittime(case:list):
+  ''' Gibt jeder Aktivität die Wartezeit an
   
-  return next_act
+  Diese Funktion arbeiteet mutierend
+
+  Parameter
+  ---------
+  case: list
+    Eine Liste, welche nach den Startzeiten der Aktivitäten sortiert ist
+  '''
+
+  no_time = dt.timedelta(seconds= 0)  # Konstante um zu gucken ob eine Zeit ngeativ ist
+  total_wait_time = dt.timedelta(seconds= 0)
+
+  # -1, da letzte Aktivität keine nachfolgende Wartezeit hat
+  for i in range(len(case) - 1):
+    # Wartezeit bestimmen
+    wait_time = dt.datetime.strptime(case[i+1]['start_timestamp'], '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(case[i]['end_timestamp'], '%Y-%m-%d %H:%M:%S')
+      
+    # prüfen, ob nächste Aktivität vor unserem Ende aufhört
+    if wait_time > no_time:
+      total_wait_time += wait_time
+      case[i]['wait_time'] = wait_time
+    else:
+      case[i]['wait_time'] = no_time
+
+  case[-1]['wait_time'] = no_time # letzter Aktivität auch das Attribut geben
+
+  
 
 
 def _calculate_case_durations(case:list):
   ''' Berechnet die Zeit eines Cases
+
+  Ab dieser Funktion ist case ein dict und keine Liste mehr
   
   Parameters
   ----------
@@ -43,7 +61,6 @@ def _calculate_case_durations(case:list):
   average_duration = dt.timedelta(seconds= 0) # Datum soll Dauer zusammenrechnen, daher mit 0 initialisieren
   waiting_time = dt.timedelta(seconds=0)      
 
-
   start_time = dt.datetime.strptime(case[0]['start_timestamp'], '%Y-%m-%d %H:%M:%S')
   end_time = dt.datetime.strptime(case[0]['end_timestamp'], '%Y-%m-%d %H:%M:%S')
 
@@ -51,17 +68,12 @@ def _calculate_case_durations(case:list):
     start_activity = dt.datetime.strptime(activity['start_timestamp'], '%Y-%m-%d %H:%M:%S')
     end_activity = dt.datetime.strptime(activity['end_timestamp'], '%Y-%m-%d %H:%M:%S')
     average_duration += end_activity - start_activity
-
-    next_act = _get_next_activity(case, activity)
-    if next_act != activity:
-      waiting_time += dt.datetime.strptime(activity['end_timestamp'], '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(next_act['start_timestamp'], '%Y-%m-%d %H:%M:%S')
-
-    # hat eine activität früher angefangen?
-    if start_activity < start_time:
-      start_time = start_activity
-    # hat einen activität später aufgehört?
-    if end_activity > end_time:
+    
+    
+    if end_time < end_activity:
       end_time = end_activity
+
+    waiting_time += activity['wait_time']
    
     activity['duration'] = end_activity - start_activity
 
@@ -72,10 +84,95 @@ def _calculate_case_durations(case:list):
   new_case['average_act_duration'] = average_duration / num_acitivties
   new_case['activities'] = case
   new_case['duration'] = end_time - start_time
+  new_case['num_act'] = len(new_case['activities'])
 
   return new_case
 
 # mutierend
 def peformance_for_log(log:dict):
   for case in log.keys():
+    _get_activity_waittime(log[case])
     log[case] = _calculate_case_durations(log[case])
+    
+
+  average_dur_act = dt.timedelta(seconds=0)
+  average_dur_wait = dt.timedelta(seconds=0)
+
+  total_act = 0
+  for case in log.keys():
+    num_act = log[case]['num_act']
+    total_act += num_act
+    average_dur_wait += log[case]['average_wait'] * (num_act -1)
+    average_dur_act += log[case]['average_act_duration'] * num_act
+
+  log['average_dur_act'] = average_dur_act / total_act
+  log['average_dur_wait'] = average_dur_wait / (total_act - len(log.keys())) # in jedem case gibt es ein -1, daher die -1 mitzählen
+
+
+def get_bottlenecks(log:dict):
+  wait_time = {}
+
+  # totale Wartezeit für alle vorkommenden Aktivitätspaare berechnen
+  for case in log.keys():
+    if 'KSV' in case: # Schlüssle soll Fall und keine Metrik sein
+      for i in range(len(log[case]['activities']) - 1):
+        curr_act = log[case]['activities'][i]
+        next_act = log[case]['activities'][i+1]
+        path = curr_act['activity'] + ' ' +  next_act['activity']
+        if path in wait_time.keys():
+          wait_time[path] = (wait_time[path][0] + curr_act['wait_time'], wait_time[path][1] + 1)
+        else:
+          wait_time[path] = (curr_act['wait_time'], 1)
+
+  # Durchschnittliche Wartezeit bestimmen
+  # durchscnittliche Wartezeit pro Aktion bestimmen, danach
+  # durchschnittliche Wartezeit über alle Aktionen bestimmen
+  average_wait_times = {}
+  total_average_wait = dt.timedelta(seconds= 0)
+  num_act_pairs = 0
+  for path in wait_time.keys():
+    average_wait_times[path] = wait_time[path][0] / wait_time[path][1]
+    total_average_wait += wait_time[path][0]
+    num_act_pairs += wait_time[path][1]
+  
+  total_average_wait = total_average_wait / num_act_pairs
+  # TODO jeden Fall angucken und dann nach Bottlenecks suchen
+  bottlenecks = {}
+  bottlenecks['problems'] = []
+  bottlenecks['threshhold'] = total_average_wait
+  for path in average_wait_times.keys():
+    if average_wait_times[path] > total_average_wait:
+      bottlenecks['problems'].append((path,average_wait_times[path]))
+
+  return bottlenecks
+
+
+def get_longest_cases(log:dict, num_cases = 1):
+  ''' Sucht nach den längsten Fällen
+
+  Parameter
+  ---------
+  log: dict
+    Das Log aus welchem die Fälle kommen
+
+  num_cases: int 
+    Anzahl der Fälle, die ausgegeben werden sollen
+  '''
+  long_cases = []
+
+  for case in log.keys():
+    if 'KSV' in case: # alle Fälle haben KSV im Namen, einige Metriken sind auch Schlüssel, diese müssen wir ignorieren
+      # Anfangs 'irgendwelche' logs nehmen
+      if len(long_cases) < num_cases:
+        long_cases.append(log[case])
+      # logs vergleichen um längsten zu finden
+      else:
+        # ist einer der bisher längsten Fälle kürzer als der aktuelle?
+        for i in range(len(long_cases)):
+          if long_cases[i]['duration'] < log[case]['duration']:
+            long_cases[i] = log[case]
+            break # break, da wir nur einen Fall ersetzten wollen
+
+  return long_cases
+
+  
