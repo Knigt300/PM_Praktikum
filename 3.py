@@ -17,14 +17,14 @@ def calculate_waiting_times(case: list):
             
             end_current = dt.datetime.strptime(
                 case[i]['end_timestamp'],
-                '%Y-%m-%d %H:%M:%S'
-            )
+                '%Y-%m-%d %H:%M:%S')
+            
 
             
             start_next = dt.datetime.strptime(
                 case[i+1]['start_timestamp'],
-                '%Y-%m-%d %H:%M:%S'
-            )
+                '%Y-%m-%d %H:%M:%S')
+            
 
             
             wait = start_next - end_current
@@ -172,5 +172,6 @@ def get_longest_acts(log: dict, num=1):
             
             if current[1] > longest[smallest_index][1]:
                 longest[smallest_index] = current
+
 
     return longest
