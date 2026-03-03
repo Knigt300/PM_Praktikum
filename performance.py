@@ -3,9 +3,6 @@ import datetime as dt
 # log aus aufgabe 1 bearbeiten/erweitern
 # einen case nehmen und dort die einzelnen Events neue Attribute geben
 
-# TODO Wartezeit naive bestimmen (Aktivitäten sind zeitlich sortiert) oder sicher gehen?
-# activitäten nach zeitlichen reihenfolge sortieren?
-
 # Zeitlich gesehen passiert a.start b.start b.ende a.ende nicht
 # a.start b.start a.ende b.ende kann passieren
 
@@ -65,11 +62,12 @@ def _calculate_case_durations(case:list):
   end_time = dt.datetime.strptime(case[0]['end_timestamp'], '%Y-%m-%d %H:%M:%S')
 
   for activity in case:
+    # Aktivitätsdauer berechnen
     start_activity = dt.datetime.strptime(activity['start_timestamp'], '%Y-%m-%d %H:%M:%S')
     end_activity = dt.datetime.strptime(activity['end_timestamp'], '%Y-%m-%d %H:%M:%S')
     average_duration += end_activity - start_activity
     
-    
+    # letzte Endzeit des Falls finden
     if end_time < end_activity:
       end_time = end_activity
 
@@ -91,11 +89,13 @@ def _calculate_case_durations(case:list):
 # mutierend
 def peformance_for_log(log:dict):
   # errechnet schon durchschnittliche warte/prozess Zeit, muss nicht für bottlneck wiederholt werden
+
+  # Wartezeit und Falldauer berechnen
   for case in log.keys():
     _get_activity_waittime(log[case])
     log[case] = _calculate_case_durations(log[case])
     
-
+  # Variablen für Durchschnitt mit 0 Seckunden initialisieren
   average_dur_act = dt.timedelta(seconds=0)
   average_dur_wait = dt.timedelta(seconds=0)
 
@@ -111,7 +111,22 @@ def peformance_for_log(log:dict):
 
 
 def get_bottlenecks(log:dict):
-  # TODO genaue def von Bottleneck erfragen (pro Fall oder gesmamt angucken)
+  ''' Sucht nach Bottlenecks anhand der Durchscnittlichen Wartezeit / Prozessdauer
+
+  Das Log wird mutiert und hat unter 'average_waits' und 'average_acts' dicts mit Pfad
+  zu durchschnittlicher Zeit
+
+
+  Parameter
+  ---------
+  log: dict
+    Ein Log, welches die Durchschnittliche Wartezeit / Prozessdauer schon hat
+  
+  Returns
+  -------
+  Ein dict mit Durchschnittlicher Wartezeit und Prozessdauer und den gefundenen Bottlenecks unter 'problems'
+  '''
+  # durchschnittliche Dauer pro Aktivität und Wartezeit errechnen
   act_wait_time = {}
 
   # totale Wartezeit für alle vorkommenden Aktivitätspaare berechnen
@@ -151,37 +166,37 @@ def get_bottlenecks(log:dict):
   # Durchschnittliche Wartezeit bestimmen
   # durchscnittliche Wartezeit pro Aktion bestimmen, danach
   # durchschnittliche Wartezeit über alle Aktionen bestimmen
-  average_wait_times = {}
-  average_act_time = {}
-  total_wait = dt.timedelta(seconds= 0)
-  num_act_pairs = 0
-  num_act = 0
-  total_act = dt.timedelta(seconds= 0)
+  average_waits = {}
+  average_acts = {}
+  
 
   for path in act_wait_time.keys():
     # wenn Leerzeichen gefunden -> Wartezeit, da zwei Aktivitäten
     if ' ' in path:
-      average_wait_times[path] = act_wait_time[path][0] / act_wait_time[path][1]
-      total_wait += act_wait_time[path][0]
-      num_act_pairs += act_wait_time[path][1]
+      average_waits[path] = act_wait_time[path][0] / act_wait_time[path][1]
     # Sonst Aktivitätsdauer
     else:
-      average_act_time[path] = act_wait_time[path][0] / act_wait_time[path][1]
-      total_act += act_wait_time[path][0]
-      num_act += act_wait_time[path][1]
+      average_acts[path] = act_wait_time[path][0] / act_wait_time[path][1]
   
-  total_average_wait = total_wait / num_act_pairs
-  average_act_time = total_act / num_act
+  log['average_waits'] = average_waits
+  log['average_acts'] = average_acts
+
+  total_average_wait = log['average_dur_wait']
+  average_act_time = log['average_dur_act']
   
   bottlenecks = {}
   bottlenecks['problems'] = []
   bottlenecks['threshhold_wait'] = total_average_wait
   bottlenecks['threshhold_act'] = average_act_time
-  for path in average_wait_times.keys():
-    if average_wait_times[path] > total_average_wait and ' ' in path:
-      bottlenecks['problems'].append((path,average_wait_times[path]))
-    elif average_wait_times[path] > average_act_time and ' ' not in path:
-      bottlenecks['problems'].append((path,average_wait_times[path]))
+
+  for path in act_wait_time.keys():
+    # ist Wartezeit zu groß?
+    duration = act_wait_time[path][0] / act_wait_time[path][1]
+    if duration > total_average_wait and ' ' in path:
+      bottlenecks['problems'].append((path, duration))
+    # ist Aktivitätsdauer zu groß?
+    elif duration > average_act_time and ' ' not in path:
+      bottlenecks['problems'].append((path, duration))
 
   return bottlenecks
 
@@ -213,5 +228,24 @@ def get_longest_cases(log:dict, num_cases = 1):
             break # break, da wir nur einen Fall ersetzten wollen
 
   return long_cases
+
+
+def get_longest_acts(log:dict, num = 1):
+  acts = log['average_acts']
+
+  long_acts = []
+  for path in acts.keys():
+    if len(long_acts) < num:
+      long_acts.append((path, acts[path]))
+    else:
+      for i in range(len(long_acts)):
+        if acts[path] > long_acts[i][1]:
+          long_acts[i] = (path, acts[path])
+          break # break, um nur maximal eine neue zu überschreiben
+
+  return long_acts
+
+
+  
 
   

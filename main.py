@@ -27,3 +27,7 @@ for acts in bottlenecks['problems']:
     print('Wartezeit:', acts[1], 'von', acts[0].split()[0],'zu', acts[0].split()[1])
   else:
     print('Prozessdauer:', acts[1], 'von', acts[0])
+
+long_acts = p.get_longest_acts(log, 5)
+for (path, dur) in long_acts:
+  print(path, dur)
