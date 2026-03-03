@@ -2,8 +2,9 @@ import read_csv as rcsv
 import folgerungsgraphminer as fgm
 import datetime as dt
 import performance as p
+import analyse as anal
 
-log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
+log = rcsv.parse_CSV_to_dict('ksv_eventlog_large.csv')
 
 
 folerungsgraph = fgm.Folgerungsgraph(log)
@@ -31,3 +32,27 @@ for acts in bottlenecks['problems']:
 long_acts = p.get_longest_acts(log, 5)
 for (path, dur) in long_acts:
   print(path, dur)
+
+# Wie sehr sind die Gates im Schnitt ausgelastet?
+gates = list(anal.get_gate_activity(log, average= True).items())
+
+gates.sort(key = lambda x: x[1])
+
+sum_entry = 0
+sum_exit = 0
+
+for g in gates:
+  if 'exit' in g[0]:
+    sum_exit += g[1]
+  else:
+    sum_entry += g[1]
+  print(g[0], g[1])
+
+print('Eintritte:', sum_entry)
+print('Austritte:', sum_exit)
+'''
+Auffälligkeit: Nicht alle Menschen verlassen das Stadion
+
+Grund anhand des Graphes erkannt:
+Menschen fliegen während der Kontrolle raus, dies passiert erst, nachdem sie ihr Ticket gescannt haben.
+'''
