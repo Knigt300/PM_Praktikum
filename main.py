@@ -18,7 +18,12 @@ for case in long_cases:
   print(case['activities'][0]['case_id'],case['duration'])
 
 bottlenecks = p.get_bottlenecks(log)
-print('Durchschnittliche Wartezeit:', bottlenecks['threshhold'])
+print(log['average_dur_act'], log['average_dur_wait'])
+print('Durchschnittliche Wartezeit:', bottlenecks['threshhold_wait'])
+print('Durchschnittliche Aktivitätesdauer:', bottlenecks['threshhold_act'])
 
 for acts in bottlenecks['problems']:
-  print('Wartezeit:', acts[1], 'von', acts[0].split()[0],'zu', acts[0].split()[1])
+  if ' ' in acts[0]:
+    print('Wartezeit:', acts[1], 'von', acts[0].split()[0],'zu', acts[0].split()[1])
+  else:
+    print('Prozessdauer:', acts[1], 'von', acts[0])

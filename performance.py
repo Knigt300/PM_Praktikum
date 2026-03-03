@@ -90,6 +90,7 @@ def _calculate_case_durations(case:list):
 
 # mutierend
 def peformance_for_log(log:dict):
+  # errechnet schon durchschnittliche warte/prozess Zeit, muss nicht für bottlneck wiederholt werden
   for case in log.keys():
     _get_activity_waittime(log[case])
     log[case] = _calculate_case_durations(log[case])
@@ -110,38 +111,76 @@ def peformance_for_log(log:dict):
 
 
 def get_bottlenecks(log:dict):
-  wait_time = {}
+  # TODO genaue def von Bottleneck erfragen (pro Fall oder gesmamt angucken)
+  act_wait_time = {}
 
   # totale Wartezeit für alle vorkommenden Aktivitätspaare berechnen
   for case in log.keys():
     if 'KSV' in case: # Schlüssle soll Fall und keine Metrik sein
       for i in range(len(log[case]['activities']) - 1):
+        # wait time
         curr_act = log[case]['activities'][i]
         next_act = log[case]['activities'][i+1]
-        path = curr_act['activity'] + ' ' +  next_act['activity']
-        if path in wait_time.keys():
-          wait_time[path] = (wait_time[path][0] + curr_act['wait_time'], wait_time[path][1] + 1)
+        path_wait = curr_act['activity'] + ' ' +  next_act['activity']
+
+        # activity duration
+        act_dur = dt.datetime.strptime(curr_act['end_timestamp'], '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(curr_act['start_timestamp'], '%Y-%m-%d %H:%M:%S')
+
+        if path_wait in act_wait_time.keys():
+          act_wait_time[path_wait] = (act_wait_time[path_wait][0] + curr_act['wait_time'],
+                                      act_wait_time[path_wait][1] + 1)
         else:
-          wait_time[path] = (curr_act['wait_time'], 1)
+          act_wait_time[path_wait] = (curr_act['wait_time'], 1)
+
+        if curr_act['activity'] in act_wait_time.keys():
+          act_wait_time[curr_act['activity']] = (act_wait_time[curr_act['activity']][0] + act_dur,
+                                                 act_wait_time[curr_act['activity']][1] + 1 )
+        else:
+          act_wait_time[curr_act['activity']] = (act_dur, 1)
+
+      # Aktivitätsdauer der letzten Aktivität nachholen
+      curr_act = log[case]['activities'][-1]
+      act_dur = (dt.datetime.strptime(curr_act['end_timestamp'], '%Y-%m-%d %H:%M:%S') - 
+                dt.datetime.strptime(curr_act['start_timestamp'], '%Y-%m-%d %H:%M:%S'))
+      if curr_act['activity'] in act_wait_time.keys():
+        act_wait_time[curr_act['activity']] = (act_wait_time[curr_act['activity']][0] + act_dur,
+                                               act_wait_time[curr_act['activity']][1] + 1 )
+      else:
+        act_wait_time[curr_act['activity']] = (act_dur, 1)
 
   # Durchschnittliche Wartezeit bestimmen
   # durchscnittliche Wartezeit pro Aktion bestimmen, danach
   # durchschnittliche Wartezeit über alle Aktionen bestimmen
   average_wait_times = {}
-  total_average_wait = dt.timedelta(seconds= 0)
+  average_act_time = {}
+  total_wait = dt.timedelta(seconds= 0)
   num_act_pairs = 0
-  for path in wait_time.keys():
-    average_wait_times[path] = wait_time[path][0] / wait_time[path][1]
-    total_average_wait += wait_time[path][0]
-    num_act_pairs += wait_time[path][1]
+  num_act = 0
+  total_act = dt.timedelta(seconds= 0)
+
+  for path in act_wait_time.keys():
+    # wenn Leerzeichen gefunden -> Wartezeit, da zwei Aktivitäten
+    if ' ' in path:
+      average_wait_times[path] = act_wait_time[path][0] / act_wait_time[path][1]
+      total_wait += act_wait_time[path][0]
+      num_act_pairs += act_wait_time[path][1]
+    # Sonst Aktivitätsdauer
+    else:
+      average_act_time[path] = act_wait_time[path][0] / act_wait_time[path][1]
+      total_act += act_wait_time[path][0]
+      num_act += act_wait_time[path][1]
   
-  total_average_wait = total_average_wait / num_act_pairs
-  # TODO jeden Fall angucken und dann nach Bottlenecks suchen
+  total_average_wait = total_wait / num_act_pairs
+  average_act_time = total_act / num_act
+  
   bottlenecks = {}
   bottlenecks['problems'] = []
-  bottlenecks['threshhold'] = total_average_wait
+  bottlenecks['threshhold_wait'] = total_average_wait
+  bottlenecks['threshhold_act'] = average_act_time
   for path in average_wait_times.keys():
-    if average_wait_times[path] > total_average_wait:
+    if average_wait_times[path] > total_average_wait and ' ' in path:
+      bottlenecks['problems'].append((path,average_wait_times[path]))
+    elif average_wait_times[path] > average_act_time and ' ' not in path:
       bottlenecks['problems'].append((path,average_wait_times[path]))
 
   return bottlenecks
