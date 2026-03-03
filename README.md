@@ -10,3 +10,5 @@ Erstellt eine Struktur für einen Folgerungsgraphen. (Aufgabe 1.b,c und 2)
 Errechnet Metriken aus dem Log(Aufgabe 3)
 # analyse.py
 Extrafunktionen für die Loganalyse (Aufgabe 4)
+# Bibliotheken
+graphviz, datetime
