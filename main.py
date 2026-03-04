@@ -3,13 +3,14 @@ import folgerungsgraphminer as fgm
 import datetime as dt
 import performance as p
 import analyse as anal
+import A4
 
-log = rcsv.parse_CSV_to_dict('ksv_eventlog_large.csv')
+log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
 
 
-folerungsgraph = fgm.Folgerungsgraph(log)
+# folerungsgraph = fgm.Folgerungsgraph(log)
 
-folerungsgraph.drawFolgerungsgraph()
+# folerungsgraph.drawFolgerungsgraph()
 
 p.peformance_for_log(log)
 
@@ -50,9 +51,29 @@ for g in gates:
 
 print('Eintritte:', sum_entry)
 print('Austritte:', sum_exit)
+
+
 '''
 Auffälligkeit: Nicht alle Menschen verlassen das Stadion
 
 Grund anhand des Graphes erkannt:
 Menschen fliegen während der Kontrolle raus, dies passiert erst, nachdem sie ihr Ticket gescannt haben.
 '''
+
+drinks = A4.get_drink_metrics(log)
+for m in drinks.keys():
+    print(m, drinks[m])
+
+stands = A4.filter_drinks(drinks, 'stand')
+time = A4.filter_drinks(drinks, 'time')
+game = A4.filter_drinks(drinks, 'match')
+
+
+for key in stands.keys():
+  print(key, stands[key])
+
+for key in time.keys():
+  print(key, time[key])
+
+for key in game.keys():
+  print(key, game[key])

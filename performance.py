@@ -141,12 +141,14 @@ def get_bottlenecks(log:dict):
         # activity duration
         act_dur = dt.datetime.strptime(curr_act['end_timestamp'], '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(curr_act['start_timestamp'], '%Y-%m-%d %H:%M:%S')
 
+        # Wartezeit zwischen zwei Events zusammenzählen
         if path_wait in act_wait_time.keys():
           act_wait_time[path_wait] = (act_wait_time[path_wait][0] + curr_act['wait_time'],
                                       act_wait_time[path_wait][1] + 1)
         else:
           act_wait_time[path_wait] = (curr_act['wait_time'], 1)
 
+        # Aktivitätsdauer zusammenzählen
         if curr_act['activity'] in act_wait_time.keys():
           act_wait_time[curr_act['activity']] = (act_wait_time[curr_act['activity']][0] + act_dur,
                                                  act_wait_time[curr_act['activity']][1] + 1 )
@@ -163,9 +165,7 @@ def get_bottlenecks(log:dict):
       else:
         act_wait_time[curr_act['activity']] = (act_dur, 1)
 
-  # Durchschnittliche Wartezeit bestimmen
-  # durchscnittliche Wartezeit pro Aktion bestimmen, danach
-  # durchschnittliche Wartezeit über alle Aktionen bestimmen
+  # Durchschnittliche Zeiten bestimmen
   average_waits = {}
   average_acts = {}
   
@@ -178,17 +178,22 @@ def get_bottlenecks(log:dict):
     else:
       average_acts[path] = act_wait_time[path][0] / act_wait_time[path][1]
   
+  # Zeiten im Log speichern
   log['average_waits'] = average_waits
   log['average_acts'] = average_acts
 
+  # Variablen, damit es einfacher zu lesen ist
   total_average_wait = log['average_dur_wait']
   average_act_time = log['average_dur_act']
   
+
+  # Bottlenecks hat selber Zeiten, um diese zu einfacher anzugucken
   bottlenecks = {}
   bottlenecks['problems'] = []
   bottlenecks['threshhold_wait'] = total_average_wait
   bottlenecks['threshhold_act'] = average_act_time
 
+  # Bottlenecks berechnen
   for path in act_wait_time.keys():
     # ist Wartezeit zu groß?
     duration = act_wait_time[path][0] / act_wait_time[path][1]
@@ -211,15 +216,19 @@ def get_longest_cases(log:dict, num_cases = 1):
 
   num_cases: int 
     Anzahl der Fälle, die ausgegeben werden sollen
+
+  Returns
+  -------
+  Eine Liste mit den ``num_cases`` längesten Fällen
   '''
   long_cases = []
 
   for case in log.keys():
     if 'KSV' in case: # alle Fälle haben KSV im Namen, einige Metriken sind auch Schlüssel, diese müssen wir ignorieren
-      # Anfangs 'irgendwelche' logs nehmen
+      # Anfangs 'irgendwelche' Fälle nehmen
       if len(long_cases) < num_cases:
         long_cases.append(log[case])
-      # logs vergleichen um längsten zu finden
+      # Fälle vergleichen um längsten zu finden
       else:
         # ist einer der bisher längsten Fälle kürzer als der aktuelle?
         for i in range(len(long_cases)):
@@ -231,6 +240,20 @@ def get_longest_cases(log:dict, num_cases = 1):
 
 
 def get_longest_acts(log:dict, num = 1):
+  ''' Sucht nach den längsten Aktivitäten
+
+  Parameter
+  ---------
+  log: dict
+    Das Log aus welchem die Fälle kommen
+
+  num: int 
+    Anzahl der Aktivitäten, die ausgegeben werden sollen
+
+  Returns
+  -------
+  Eine Liste mit den ``num_cases`` längesten Aktivitäten
+  '''
   acts = log['average_acts']
 
   long_acts = []
