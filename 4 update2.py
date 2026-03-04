@@ -1,36 +1,41 @@
-def analyse_drink_times(log: dict):
+def get_drink_stand_usage(log: dict):
     '''
-    Analysiert, welches Getränk in welcher Spielphase
-    am häufigsten bestellt wurde.
-    
+    Analysiert die Auslastung der Getränke pro Stand.
+    Für jedes Getränk, jeden Stand und jede Spielphase wird gezählt,
+    wie oft das Getränk bestellt wurde.
+
     Returns:
-        dict: {phase: {getraenk: anzahl}}
+        dict: {stand: {phase: {getraenk: anzahl}}}
     '''
 
-    result = {}
+    usage = {}
 
     for case_id in log.keys():
 
-        # Nur echte Match-Cases betrachten
-        if 'KSV' in case_id:
+        if 'KSV' in case_id:  # nur echte Matches
 
             for event in log[case_id]:
 
-                # Nur Getränke-Bestellungen betrachten
+                # Nur Getränke-Bestellungen berücksichtigen
                 if event['activity'] == 'getraenkestand_bestellen':
 
-                    phase = event['attribute_match_phase']
-                    drink = event['attribute_material_type']
+                    stand = event['object_stand']  # Stand-Name
+                    phase = event['attribute_match_phase']  # Spielphase
+                    drink = event['attribute_material_type']  # Getränk
 
-                    # Falls Phase noch nicht existiert -> anlegen
-                    if phase not in result:
-                        result[phase] = {}
+                    # Stand anlegen, falls noch nicht vorhanden
+                    if stand not in usage:
+                        usage[stand] = {}
 
-                    # Falls Getränk in Phase noch nicht existiert -> anlegen
-                    if drink not in result[phase]:
-                        result[phase][drink] = 1
+                    # Phase im Stand anlegen
+                    if phase not in usage[stand]:
+                        usage[stand][phase] = {}
+
+                    # Getränk in der Phase zählen
+                    if drink not in usage[stand][phase]:
+                        usage[stand][phase][drink] = 1
                     else:
-                        result[phase][drink] += 1
+                        usage[stand][phase][drink] += 1
 
+    return usage
 
-    return result
