@@ -1,41 +1,66 @@
-def get_drink_stand_usage(log: dict):
+def get_drink_stand_activity(log: dict, average=True):
     '''
-    Analysiert die Auslastung der Getränke pro Stand.
-    Für jedes Getränk, jeden Stand und jede Spielphase wird gezählt,
-    wie oft das Getränk bestellt wurde.
+    Berechnet die Auslastung der Getränkestände pro Match.
+    
+    Dabei werden die Bestellungen der Getränke als Metrik benutzt.
 
-    Returns:
-        dict: {stand: {phase: {getraenk: anzahl}}}
+    Parameters
+    ----------
+    log: dict
+        Das Log, in welchem die Daten sind.
+    average: bool
+        Wenn True → Durchschnitt pro Match, sonst totale Anzahl
+
+    Returns
+    -------
+    dict
+        Schlüssel: Getränk + Stand + Spielphase
+        Wert: Anzahl (oder Durchschnitt) der Bestellungen
     '''
 
-    usage = {}
+    drinks_per_match = {}
 
-    for case_id in log.keys():
-
-        if 'KSV' in case_id:  # nur echte Matches
-
-            for event in log[case_id]:
+    for case in log.keys():
+        if 'KSV' in case:  # Nur echte Matches
+            for act in log[case]['activities']:
 
                 # Nur Getränke-Bestellungen berücksichtigen
-                if event['activity'] == 'getraenkestand_bestellen':
+                if act['activity'] == 'getraenkestand_bestellen':
 
-                    stand = event['object_stand']  # Stand-Name
-                    phase = event['attribute_match_phase']  # Spielphase
-                    drink = event['attribute_material_type']  # Getränk
+                    drink = act['attribute_material_type']      # Getränk
+                    stand = act['object_stand']                 # Stand
+                    phase = act['attribute_match_phase']        # Spielphase
+                    match = act['object_match']                 # Match
+                    fan = act['object_fan']                     # Fan-ID
 
-                    # Stand anlegen, falls noch nicht vorhanden
-                    if stand not in usage:
-                        usage[stand] = {}
+                    # Kombinierter Schlüssel: Getränk + Stand + Phase
+                    key = f"{drink} - {stand} - {phase}"
 
-                    # Phase im Stand anlegen
-                    if phase not in usage[stand]:
-                        usage[stand][phase] = {}
-
-                    # Getränk in der Phase zählen
-                    if drink not in usage[stand][phase]:
-                        usage[stand][phase][drink] = 1
+                    # Match bereits vorhanden?
+                    if match in drinks_per_match:
+                        if key in drinks_per_match[match]:
+                            drinks_per_match[match][key].append(fan)
+                        else:
+                            drinks_per_match[match][key] = [fan]
                     else:
-                        usage[stand][phase][drink] += 1
+                        drinks_per_match[match] = {key: [fan]}
 
-    return usage
+    # Gesamtauslastung berechnen
+    drinks_total = {}
+
+    for match in drinks_per_match.keys():
+        for key in drinks_per_match[match].keys():
+            if key in drinks_total:
+                drinks_total[key] += len(drinks_per_match[match][key])
+            else:
+                drinks_total[key] = len(drinks_per_match[match][key])
+
+    # Durchschnitt pro Match berechnen
+    if average:
+        num_matches = len(drinks_per_match.keys())
+        for key in drinks_total.keys():
+            drinks_total[key] = drinks_total[key] / num_matches
+
+    return drinks_total
+
 
