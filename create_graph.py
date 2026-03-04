@@ -20,7 +20,7 @@ def _get_occurences_node_from_edges(edges:dict):
   return occ_nodes
 
 
-def createGraph(nodes:list, variants:list, type = 'svg'):
+def createGraph(nodes:list, variants:list):
   '''Erstellt einen Graphen anhand der gegebenen Knoten und Varianten 
 
   Parameter

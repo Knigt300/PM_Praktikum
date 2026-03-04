@@ -37,7 +37,7 @@ def filter_variants(variants: dict, threshhold: int):
   Parameter
   ---------
   variants: dict
-    Varianten mit Anzahl, welche gfiltert werden sollen.
+    Varianten mit Anzahl, welche gefiltert werden sollen.
 
   threshhold: int
     Mindestanzahl an Vorkommen für gültig Aktivitäten.
