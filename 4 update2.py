@@ -22,14 +22,15 @@ def analyse_drink_times(log: dict):
                     phase = event['attribute_match_phase']
                     drink = event['attribute_material_type']
 
-                    # Falls Phase noch nicht existiert → anlegen
+                    # Falls Phase noch nicht existiert -> anlegen
                     if phase not in result:
                         result[phase] = {}
 
-                    # Falls Getränk in Phase noch nicht existiert → anlegen
+                    # Falls Getränk in Phase noch nicht existiert -> anlegen
                     if drink not in result[phase]:
                         result[phase][drink] = 1
                     else:
                         result[phase][drink] += 1
+
 
     return result
