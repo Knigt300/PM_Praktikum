@@ -60,13 +60,13 @@ Grund anhand des Graphes erkannt:
 Menschen fliegen während der Kontrolle raus, dies passiert erst, nachdem sie ihr Ticket gescannt haben.
 '''
 
-drinks = A4.get_drink_metrics(log)
+drinks = anal.get_drink_metrics(log)
 for m in drinks.keys():
     print(m, drinks[m])
 
-stands = A4.filter_drinks(drinks, 'stand')
-time = A4.filter_drinks(drinks, 'time')
-game = A4.filter_drinks(drinks, 'match')
+stands = anal.filter_drinks(drinks, 'stand')
+time = anal.filter_drinks(drinks, 'time')
+game = anal.filter_drinks(drinks, 'match')
 # Wie viele Stände gibt es pro Bereich?
 n,o,s,w = 0,0,0,0
 # Getränke pro Bereich
