@@ -51,6 +51,8 @@ for g in gates:
 
 print('Eintritte:', sum_entry)
 print('Austritte:', sum_exit)
+
+
 '''
 Auffälligkeit: Nicht alle Menschen verlassen das Stadion
 
@@ -63,3 +65,54 @@ d = A4u.get_drink_stand_activity(log, average = False)
 
 for key in d.keys():
   print(key, d[key])
+drinks = anal.get_drink_metrics(log)
+for m in drinks.keys():
+    print(m, drinks[m])
+
+stands = anal.filter_drinks(drinks, 'stand')
+time = anal.filter_drinks(drinks, 'time')
+game = anal.filter_drinks(drinks, 'match')
+# Wie viele Stände gibt es pro Bereich?
+n,o,s,w = 0,0,0,0
+# Getränke pro Bereich
+nd, od, sd, wd = 0,0,0,0
+
+# 'N' ist in jedem Schlüssel, daher mit '_N_' nach Bereich gucken
+for key in stands.keys():
+  if '_N_' in key:
+    n += 1
+    nd += stands[key]
+  elif '_E_' in key:
+    o += 1
+    od += stands[key]
+  elif '_S_' in key:
+    s += 1
+    sd += stands[key]
+  elif '_W_':
+    w += 1
+    wd += stands[key]
+  print(key, stands[key])
+
+for key in time.keys():
+  print(key, time[key])
+
+for key in game.keys():
+  print(key, game[key])
+
+print('Norden: Stände:',n,'Getränke:',nd,'Durchschnitt:',nd/n)
+print('Osten: Stände:',o,'Getränke:',od,'Durchschnitt:',od/o)
+print('Süden: Stände:',s,'Getränke:',sd,'Durchschnitt:',sd/s)
+print('Westen: Stände:',w,'Getränke:',wd,'Durchschnitt:',wd/w)
+
+'''
+Auffälliges: Es werden viele Getränke nach dem Spiel gekauft
+
+
+Als Person, die Fußball nicht verfolgt, sind erstaunlich wenig Getränke vorm Start geholt worden
+
+Pro Match Metrik müsste man mit Anzahl Besuchern abgleichen, damit diese aussagekräftig ist
+
+Der Süden ist im Verhältniss zum Rest sehr ausgelastet. Dies kann ein Problem sein, wenn Leute lange warten müssen.
+Wir haben aber nicht die Anstellzeit in unserem Log.
+
+'''
