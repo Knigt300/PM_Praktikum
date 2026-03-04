@@ -3,7 +3,6 @@ import folgerungsgraphminer as fgm
 import datetime as dt
 import performance as p
 import analyse as anal
-import A4
 
 log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
 
