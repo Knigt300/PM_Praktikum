@@ -1,68 +1,62 @@
-def get_drink_stand_activity(log: dict, average=True):
+def get_block_activity(log: dict, average=True):
     '''
-    Berechnet die Auslastung der Getränkestände pro Match.
+    Berechnet die Auslastung der Tribünenblöcke pro Match.
     
-    Dabei werden die Bestellungen der Getränke als Metrik benutzt.
+    Dabei werden die gescannten Eintrittstickets als Metrik benutzt.
 
     Parameters
     ----------
     log: dict
-        Das Log, in welchem die Daten sind.
+        Das Log in welchem die Daten sind.
     average: bool
-        Wenn True → Durchschnitt pro Match, sonst totale Anzahl
+        Wenn True → Durchschnitt pro Match
+        Wenn False → totale Anzahl
 
     Returns
     -------
     dict
-        Schlüssel: Getränk + Stand + Spielphase
-        Wert: Anzahl (oder Durchschnitt) der Bestellungen
+        Schlüssel: Block
+        Wert: Anzahl (oder Durchschnitt) der Fans
     '''
 
-    drinks_per_match = {}
+    blocks_per_match = {}
 
     for case in log.keys():
-        if 'KSV' in case:  # Nur echte Matches
+        if 'KSV' in case:  # nur echte Matches
+
             for act in log[case]['activities']:
 
-                # Nur Getränke-Bestellungen berücksichtigen
-                if act['activity'] == 'getraenkestand_bestellen':
+                # Nur Eintritt scannen betrachten
+                if act['activity'] == 'einlass_ticket_scannen':
 
-                    drink = act['attribute_material_type']      # Getränk
-                    # Es gibt kein Objekt/Attribut, was sagt, welches Getränk bestellt wird
-                    # dieses attribut kann leer sein, dann sieht es komisch aus
-                    stand = act['object_stand']                 # Stand
-                    phase = act['attribute_match_phase']        # Spielphase
-                    match = act['object_match']                 # Match
-                    fan = act['object_fan']                     # Fan-ID
+                    block = act['object_block']
+                    fan = act['object_fan']
+                    match = act['object_match']
 
-                    # Kombinierter Schlüssel: Getränk + Stand + Phase
-                    key = f"{drink} - {stand} - {phase}"
+                    # Match schon vorhanden?
+                    if match in blocks_per_match:
 
-                    # Match bereits vorhanden?
-                    if match in drinks_per_match:
-                        if key in drinks_per_match[match]:
-                            drinks_per_match[match][key].append(fan)
+                        # Block schon vorhanden?
+                        if block in blocks_per_match[match]:
+                            blocks_per_match[match][block].append(fan)
                         else:
-                            drinks_per_match[match][key] = [fan]
+                            blocks_per_match[match][block] = [fan]
+
                     else:
-                        drinks_per_match[match] = {key: [fan]}
+                        blocks_per_match[match] = {block: [fan]}
 
     # Gesamtauslastung berechnen
-    drinks_total = {}
+    blocks_total = {}
 
-    for match in drinks_per_match.keys():
-        for key in drinks_per_match[match].keys():
-            if key in drinks_total:
-                drinks_total[key] += len(drinks_per_match[match][key])
+    for match in blocks_per_match.keys():
+        for block in blocks_per_match[match].keys():
+
+            if block in blocks_total:
+                blocks_total[block] += len(blocks_per_match[match][block])
             else:
-                drinks_total[key] = len(drinks_per_match[match][key])
+                blocks_total[block] = len(blocks_per_match[match][block])
 
-    # Durchschnitt pro Match berechnen
-    if average:
-        num_matches = len(drinks_per_match.keys())
-        for key in drinks_total.keys():
-            drinks_total[key] = drinks_total[key] / num_matches
 
-    return drinks_total
 
+    return blocks_total
 
