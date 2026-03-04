@@ -3,6 +3,7 @@ import folgerungsgraphminer as fgm
 import datetime as dt
 import performance as p
 import analyse as anal
+import A4_update2 as A4u
 
 log = rcsv.parse_CSV_to_dict('ksv_eventlog_small.csv')
 
@@ -59,6 +60,11 @@ Grund anhand des Graphes erkannt:
 Menschen fliegen während der Kontrolle raus, dies passiert erst, nachdem sie ihr Ticket gescannt haben.
 '''
 
+
+d = A4u.get_drink_stand_activity(log, average = False)
+
+for key in d.keys():
+  print(key, d[key])
 drinks = anal.get_drink_metrics(log)
 for m in drinks.keys():
     print(m, drinks[m])
