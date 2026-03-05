@@ -33,10 +33,10 @@ def get_block_activity(log: dict, average=True):
                     fan = act['object_fan']
                     match = act['object_match']
 
-                    # Match schon vorhanden?
+                    # Struktur aufbauen
                     if match in blocks_per_match:
 
-                        # Block schon vorhanden?
+                        # Fan zum Block hinzufügen / Block hinzufügen
                         if block in blocks_per_match[match]:
                             blocks_per_match[match][block].append(fan)
                         else:
